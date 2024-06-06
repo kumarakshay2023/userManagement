@@ -24,12 +24,12 @@ exports.loginUser = asyncHandler(async (req, res) => {
 });
 
 exports.addUsers = asyncHandler(async (req, res) => {
-  const { privilages, username, password, role_id } = req.body;
+  const { privileges, username, password, role_id } = req.body;
   const user = req.user;
   if (!username) throw new ApiError("Username must be provided", 400);
   if (!password) throw new ApiError("Password must be provided", 400);
   if (!role_id) throw new ApiError("Role is required", 400);
-  if (!privilages) throw new ApiError("privileges must be provided", 400);
+  if (!privileges) throw new ApiError("privileges must be provided", 400);
   const role = await Role.findOne({ where: { role_id: role_id } });
   if (!role) throw new ApiError("Role not found", 400);
   const userPrivileges = await Role.findOne({
@@ -37,7 +37,7 @@ exports.addUsers = asyncHandler(async (req, res) => {
   });
 
   if (!userPrivileges) throw new ApiError("Role not found", 400);
-  if (!userPrivileges.privileges.includes(privilages))
+  if (!userPrivileges.privileges.includes(privileges))
     throw new ApiError("User don't have access", 400);
 
   const findUser = await User.findOne({ where: { username: username } });
@@ -55,14 +55,14 @@ exports.addUsers = asyncHandler(async (req, res) => {
 });
 
 exports.addOrganisation = asyncHandler(async (req, res) => {
-  const { org_name, privilages } = req.body;
+  const { org_name, privileges } = req.body;
   const user = req.user;
   const userPrivileges = await Role.findOne({
     where: { role_id: user.role_id },
   });
   if (!privilages) throw new ApiError("privileges must be provided", 400);
   if (!userPrivileges) throw new ApiError("Role not found", 400);
-  if (!userPrivileges.privileges.includes(privilages))
+  if (!userPrivileges.privileges.includes(privileges))
     throw new ApiError("User don't have access", 400);
   const checkOrganisation = await Organization.findOne({
     where: { org_name: org_name },
@@ -76,17 +76,17 @@ exports.addOrganisation = asyncHandler(async (req, res) => {
 });
 
 exports.addUsersToOrganisation = asyncHandler(async (req, res) => {
-  const { user_id, privilages, org_id } = req.body;
+  const { user_id, privileges, org_id } = req.body;
   const user = req.user;
   if (!user_id) throw new ApiError("User must be provided ", 400);
-  if (!privilages) throw new ApiError("privileges must be provided", 400);
+  if (!privileges) throw new ApiError("privileges must be provided", 400);
   if (!org_id) throw new ApiError("organistion must be provided", 400);
   const userPrivileges = await Role.findOne({
     where: { role_id: user.role_id },
   });
 
   if (!userPrivileges) throw new ApiError("Role not found", 400);
-  if (!userPrivileges.privileges.includes(privilages))
+  if (!userPrivileges.privileges.includes(privileges))
     throw new ApiError("User don't have access", 400);
   const checkUser = await User.findOne({ where: { user_id: user_id } });
   if (!checkUser) throw new ApiError("User not found", 400);
@@ -95,6 +95,7 @@ exports.addUsersToOrganisation = asyncHandler(async (req, res) => {
   });
   if (checkUserInOrganization)
     throw new ApiError("User already exists to organisation", 400);
+  console.log("User", user_id);
   await Users_Organizations.create({
     user_id: user_id,
     org_id: org_id,
@@ -137,10 +138,32 @@ exports.addTaskToOrganization = asyncHandler(async (req, res) => {
 
 exports.getTasksForOrganizations = asyncHandler(async (req, res) => {
   const { org_id } = req.body;
-  const taskDatas = await Task.findAll({ where: { org_id: org_id } });
+  const taskData = await Task.findAll({ where: { org_id: org_id } });
   if (!taskData) throw new ApiError("No task found", 400);
   return res.status(200).json({
     success: true,
-    data: taskDatas,
+    data: taskData,
+  });
+});
+
+exports.switchOriganisation = asyncHandler(async (req, res) => {
+  const { org_id, privileges } = req.body;
+  const user = req.user;
+  const {
+    cookie: { _expires },
+  } = req.session;
+  if (Date.now() > _expires)
+    throw new ApiError("Session expired please login again", 400);
+
+  if (!org_id) throw new ApiError("Organisation must be provided", 400);
+  if (!privileges) throw new ApiError("Privileges must be provided", 400);
+  const checkUserOrganization = await Users_Organizations.findOne({
+    where: { user_id: user.user_id, org_id: org_id },
+  });
+  if (!checkUserOrganization)
+    throw new ApiError("You cannot switch to organization", 400);
+  return res.status(200).json({
+    success: true,
+    msg: "Successfully switched to organisation",
   });
 });

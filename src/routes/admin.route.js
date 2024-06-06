@@ -1,5 +1,5 @@
 const express = require('express');
-const { addUsers,loginUser,addOrganisation, addUsersToOrganisation, addTaskToOrganization, getTasksForOrganizations } = require('../controllers/admin.controller');
+const { addUsers,loginUser,addOrganisation, addUsersToOrganisation, addTaskToOrganization, getTasksForOrganizations, switchOriganisation } = require('../controllers/admin.controller');
 const { auth } = require('../middlewares/auth');
 
 
@@ -11,5 +11,6 @@ router.post('/organisation/add',auth,addOrganisation)
 router.post('/user-organisation/add',auth,addUsersToOrganisation)
 router.post('/task-add',auth,addTaskToOrganization)
 router.get("/tasks",getTasksForOrganizations)
+router.put("/switch-organisation",auth,switchOriganisation);
 
 module.exports = router
